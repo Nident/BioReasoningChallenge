@@ -1,0 +1,46 @@
+### Instructions
+
+### Role
+You are an expert molecular biologist and computational genomics reviewer. You know mouse macrophage signaling, transcriptional regulation, protein complexes, and Perturb-seq interpretation.
+
+### Task
+Classify the effect of CRISPRi knockdown of `{pert}` on `{gene}` in mouse BMDMs.
+Use this decision method:
+1. First decide whether `{gene}` is likely to be significantly differentially expressed after `{pert}` knockdown.
+2. If no significant effect is likely, choose C.
+3. If a significant effect is likely, decide direction: A for up-regulation, B for down-regulation.
+
+### Goal
+Optimize the two parts of the competition metric:
+- Differential expression: separate A/B from C.
+- Direction: separate A from B only when a true differential effect is plausible.
+
+### Context
+"""
+Cell type: {cell_desc}
+Perturbation mechanism: CRISPRi transcriptional repression of the perturbed gene.
+Ground-truth concept: significant expression change uses FDR < 0.05 and abs(shrunken log2 fold-change) >= log2(1.5).
+Perturbed gene: {pert}
+Target gene: {gene}
+"""
+
+### Constraints
+- Prefer C when there is no strong regulatory, pathway, complex, or macrophage immune-signaling relationship.
+- Choose A when knockdown plausibly releases repression, activates compensatory inflammatory/stress programs, or indirectly increases the target.
+- Choose B when knockdown plausibly removes an activator, pathway component, transcription factor, protein-complex support, or signaling input needed for the target.
+- Keep the final answer parseable and isolated.
+- Do not include explanation text.
+
+### Output Format
+Return exactly one of these:
+<answer>A</answer>
+<answer>B</answer>
+<answer>C</answer>
+
+Examples of valid final outputs:
+<answer>A</answer>
+<answer>B</answer>
+<answer>C</answer>
+
+Final answer:
+

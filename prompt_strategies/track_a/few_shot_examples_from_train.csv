@@ -1,0 +1,14 @@
+id,pert,gene,label,reason_for_selection
+Tnfaip3_Cxcl2,Tnfaip3,Cxcl2,up,NF-kB negative regulator perturbation with cytokine/chemokine response target
+Ptpn2_Gbp2,Ptpn2,Gbp2,up,immune signaling phosphatase perturbation with interferon-response target
+Pgm3_Hspa5,Pgm3,Hspa5,up,stress/ER-response target under metabolic glycosylation perturbation
+Dusp1_Plaur,Dusp1,Plaur,up,MAPK phosphatase perturbation with macrophage activation target
+Jak1_Gbp3,Jak1,Gbp3,down,JAK signaling loss with reduced interferon-response target
+Irak4_Il1b,Irak4,Il1b,down,innate immune kinase perturbation with inflammatory cytokine target
+Junb_Fcgr2b,Junb,Fcgr2b,down,transcription factor perturbation with immune receptor target
+Usp7_Acod1,Usp7,Acod1,down,regulatory perturbation with macrophage inflammatory metabolism target
+Tbk1_Cd36,Tbk1,Cd36,none,known immune kinase but unrelated target in this sampled row
+Pgm3_Actb,Pgm3,Actb,none,housekeeping/structural target without significant effect in this row
+Tnfaip3_Ctsl,Tnfaip3,Ctsl,none,immune regulator perturbation but lysosomal target not significant in this row
+Il10ra_Ccl9,Il10ra,Ccl9,none,cytokine receptor perturbation but chemokine target not significant in this row
+

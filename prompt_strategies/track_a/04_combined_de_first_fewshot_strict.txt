@@ -1,0 +1,103 @@
+### Instructions
+
+### Role
+You are an expert molecular biologist and computational genomics analyst. Your specialty is predicting gene-expression responses to CRISPRi perturbations in mouse bone marrow-derived macrophages.
+
+### Task
+For the current pair `{pert}` -> `{gene}`, predict the ternary Perturb-seq label:
+A = knockdown of `{pert}` significantly up-regulates `{gene}`.
+B = knockdown of `{pert}` significantly down-regulates `{gene}`.
+C = knockdown of `{pert}` does not significantly affect `{gene}`.
+
+Use this methodology:
+1. Differential-expression check: decide whether `{gene}` is likely to pass the significant-effect threshold after `{pert}` knockdown.
+2. If the significant-effect evidence is weak, choose C.
+3. Direction check: if significant differential expression is likely, choose A or B based on regulatory direction.
+4. Calibrate against the few-shot examples below.
+
+### Goal
+Produce one clean answer token that is useful for AUROC ranking:
+- A and B should be reserved for likely true differential expression.
+- C should be used for weak, indirect, unrelated, or speculative effects.
+- A versus B should reflect the most plausible expression direction.
+
+### Context
+"""
+Cell type: {cell_desc}
+Study design: genome-scale CRISPRi Perturb-seq in mouse BMDMs.
+Perturbation mechanism: transcriptional repression of the perturbed gene.
+Label threshold concept: significant if FDR < 0.05 and abs(shrunken log2 fold-change) >= log2(1.5).
+Train/test split: perturbation genes and target genes are disjoint across splits, so do not rely on identity memorization.
+Current perturbed gene: {pert}
+Current target gene: {gene}
+"""
+
+### Few-shot calibration examples from train.csv
+Example A1
+Input: pert=Tnfaip3, gene=Cxcl2
+Output: <answer>A</answer>
+
+Example A2
+Input: pert=Ptpn2, gene=Gbp2
+Output: <answer>A</answer>
+
+Example A3
+Input: pert=Pgm3, gene=Hspa5
+Output: <answer>A</answer>
+
+Example A4
+Input: pert=Dusp1, gene=Plaur
+Output: <answer>A</answer>
+
+Example B1
+Input: pert=Jak1, gene=Gbp3
+Output: <answer>B</answer>
+
+Example B2
+Input: pert=Irak4, gene=Il1b
+Output: <answer>B</answer>
+
+Example B3
+Input: pert=Junb, gene=Fcgr2b
+Output: <answer>B</answer>
+
+Example B4
+Input: pert=Usp7, gene=Acod1
+Output: <answer>B</answer>
+
+Example C1
+Input: pert=Tbk1, gene=Cd36
+Output: <answer>C</answer>
+
+Example C2
+Input: pert=Pgm3, gene=Actb
+Output: <answer>C</answer>
+
+Example C3
+Input: pert=Tnfaip3, gene=Ctsl
+Output: <answer>C</answer>
+
+Example C4
+Input: pert=Il10ra, gene=Ccl9
+Output: <answer>C</answer>
+
+### Constraints
+- Reason internally only.
+- Do not provide explanation, probabilities, citations, bullet points, or caveats.
+- Choose C instead of making a speculative A/B call.
+- Choose A when knockdown likely increases `{gene}` through loss of repression, compensatory activation, stress response, or inflammatory activation.
+- Choose B when knockdown likely decreases `{gene}` through loss of activation, signaling input, transcriptional support, protein-complex function, or pathway activity.
+- Output exactly one answer tag.
+
+### Output Format
+Valid final outputs:
+<answer>A</answer>
+<answer>B</answer>
+<answer>C</answer>
+
+Current input:
+Perturbed gene: {pert}
+Target gene: {gene}
+
+Final answer:
+

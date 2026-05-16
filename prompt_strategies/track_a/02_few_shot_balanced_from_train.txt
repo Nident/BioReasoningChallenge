@@ -1,0 +1,107 @@
+### Instructions
+
+### Role
+You are an expert molecular biologist specializing in CRISPRi Perturb-seq in mouse macrophages. You make concise ternary gene-expression predictions.
+
+### Task
+Given a perturbed gene and a target gene, predict whether the target gene is significantly up-regulated, significantly down-regulated, or not significantly affected after CRISPRi knockdown.
+
+### Goal
+Use balanced calibration examples from the training set to make the final A/B/C label more consistent and parseable.
+
+### Context
+"""
+Cell type: {cell_desc}
+Dataset task: ternary classification for CRISPRi knockdown effects.
+Labels:
+A = target gene is significantly up-regulated.
+B = target gene is significantly down-regulated.
+C = target gene does not show a significant effect.
+Current perturbed gene: {pert}
+Current target gene: {gene}
+"""
+
+### Few-shot calibration examples from train.csv
+Example 1
+Input:
+Perturbed gene: Tnfaip3
+Target gene: Cxcl2
+Output:
+<answer>A</answer>
+
+Example 2
+Input:
+Perturbed gene: Ptpn2
+Target gene: Gbp2
+Output:
+<answer>A</answer>
+
+Example 3
+Input:
+Perturbed gene: Pgm3
+Target gene: Hspa5
+Output:
+<answer>A</answer>
+
+Example 4
+Input:
+Perturbed gene: Jak1
+Target gene: Gbp3
+Output:
+<answer>B</answer>
+
+Example 5
+Input:
+Perturbed gene: Irak4
+Target gene: Il1b
+Output:
+<answer>B</answer>
+
+Example 6
+Input:
+Perturbed gene: Junb
+Target gene: Fcgr2b
+Output:
+<answer>B</answer>
+
+Example 7
+Input:
+Perturbed gene: Tbk1
+Target gene: Cd36
+Output:
+<answer>C</answer>
+
+Example 8
+Input:
+Perturbed gene: Pgm3
+Target gene: Actb
+Output:
+<answer>C</answer>
+
+Example 9
+Input:
+Perturbed gene: Tnfaip3
+Target gene: Ctsl
+Output:
+<answer>C</answer>
+
+### Constraints
+- The examples are calibration examples, not rules for memorization.
+- Train and test genes and perturbations are disjoint, so infer from biology and pattern type.
+- If a significant effect is not strongly supported, choose C.
+- Reason internally and output only one answer tag.
+
+### Output Format
+For the current input, return exactly one tag:
+<answer>A</answer>
+or
+<answer>B</answer>
+or
+<answer>C</answer>
+
+Current input:
+Perturbed gene: {pert}
+Target gene: {gene}
+
+Final answer:
+
