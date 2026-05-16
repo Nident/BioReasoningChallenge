@@ -1,0 +1,7 @@
+ipykernel>=6.29
+jupyter>=1.1
+nbclient>=0.10
+numpy>=1.26
+openai>=1.99
+pandas>=2.2
+python-dotenv>=1.0
