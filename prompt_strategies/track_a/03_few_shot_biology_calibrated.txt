@@ -20,7 +20,7 @@ Current perturbed gene: {pert}
 Current target gene: {gene}
 """
 
-### Calibration examples from train.csv
+### Calibration examples:
 Input: pert=Tnfaip3, gene=Cxcl2
 Output: <answer>A</answer>
 Calibration note: immune regulatory perturbations can increase inflammatory chemokines.
