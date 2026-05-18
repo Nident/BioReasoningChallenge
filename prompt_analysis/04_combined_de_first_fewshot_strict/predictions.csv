@@ -1,0 +1,6 @@
+ground_truth,prediction,response_sample
+down,UNPARSED,<answer>C</answer>
+none,UNPARSED,<answer>C</answer>
+down,UNPARSED,<answer>C</answer>
+up,UNPARSED,<answer>C</answer>
+none,UNPARSED,<answer>B</answer>
