@@ -221,7 +221,7 @@ if __name__ == "__main__":
     load_dotenv(ROOT_DIR / "config" / ".env")
 
     max_samples_raw = os.getenv("PROMPT_MAX_SAMPLES", "")
-    max_samples = int(max_samples_raw) if max_samples_raw else None
+    max_samples = int(max_samples_raw) if max_samples_raw != "" else None
 
     constructor = PromptConstructor()
     prompts = constructor.build_prompts(
