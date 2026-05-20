@@ -179,10 +179,9 @@ class PromptConstructor:
         output_path = Path(output_dir)
         if output_path.is_absolute() or ".." in output_path.parts:
             raise ValueError("output_dir must be a relative folder inside data")
-        output_path = DATA_DIR / output_path
-        txt_dir = output_path / "txt"
-        txt_dir.mkdir(parents=True, exist_ok=True)
-        for old_prompt in txt_dir.glob("*.txt"):
+        output_path = DATA_DIR / output_path / prompt_type
+        output_path.mkdir(parents=True, exist_ok=True)
+        for old_prompt in output_path.glob("*.txt"):
             old_prompt.unlink()
 
         prompts.to_csv(output_path / "prompts.csv", index=False)
@@ -198,7 +197,7 @@ class PromptConstructor:
             if "/" in prompt_id_value or "\\" in prompt_id_value:
                 raise ValueError(f"id is not a valid filename: {prompt_id_value}")
 
-            (txt_dir / f"{idx:06d}_{prompt_id_value}.txt").write_text(prompt_value, encoding="utf-8")
+            (output_path / f"{idx:06d}_{prompt_id_value}.txt").write_text(prompt_value, encoding="utf-8")
 
         return prompts
 
@@ -232,5 +231,5 @@ if __name__ == "__main__":
         few_shot_path=os.getenv("PROMPT_FEW_SHOT_PATH") or None,
         max_samples=max_samples,
     )
-    print(f"Saved prompts: {DATA_DIR / _env('PROMPT_OUTPUT_DIR')}")
+    print(f"Saved prompts: {DATA_DIR / _env('PROMPT_OUTPUT_DIR') / _env('PROMPT_TYPE')}")
     print(f"Total prompts: {len(prompts)}")

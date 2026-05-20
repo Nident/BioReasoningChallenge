@@ -7,3 +7,6 @@ config/.env
 
 data/built_prompts
 prompt_analysis
+
+test.ipynb
+.prompt_cache/

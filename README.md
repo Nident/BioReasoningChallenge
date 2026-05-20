@@ -11,7 +11,7 @@ BioReasoningChallenge/
 │   └── .env                  # Local config with secrets, ignored by git
 ├── data/
 │   ├── train.csv             # Input dataset
-│   └── built_prompts/        # Generated prompts by default
+│   └── built_prompts/        # Generated prompts grouped by prompt type
 ├── prompt_analysis/          # Model responses, predictions, and metrics
 ├── prompt_strategies/
 │   └── track_a/              # Prompt templates
@@ -67,7 +67,7 @@ MODEL_TEMPERATURE=0
 MODEL_MAX_TOKENS=32
 MODEL_TOP_P=1
 
-TEST_PROMPTS_PATH=data/built_prompts/prompts.csv
+TEST_PROMPTS_PATH=data/built_prompts/zero_shot_strict/prompts.csv
 TEST_RUN_NAME=zero_shot_strict
 TEST_OUTPUT_DIR=prompt_analysis
 TEST_CACHE_DIR=.prompt_cache
@@ -90,9 +90,9 @@ python track_A/prompt_constructor.py
 The constructor reads `DATA_PATH`, fills `PROMPT_TEMPLATE_PATH`, optionally adds few-shot examples from `PROMPT_FEW_SHOT_PATH`, and writes results to:
 
 ```text
-data/<PROMPT_OUTPUT_DIR>/prompts.csv
-data/<PROMPT_OUTPUT_DIR>/txt/000000_<id>.txt
-data/<PROMPT_OUTPUT_DIR>/txt/000001_<id>.txt
+data/<PROMPT_OUTPUT_DIR>/<PROMPT_TYPE>/prompts.csv
+data/<PROMPT_OUTPUT_DIR>/<PROMPT_TYPE>/000000_<id>.txt
+data/<PROMPT_OUTPUT_DIR>/<PROMPT_TYPE>/000001_<id>.txt
 ```
 
 The numeric prefix prevents files from being overwritten when several rows have the same gene pair.
@@ -128,7 +128,7 @@ Any other answer is treated as an invalid response.
 
 1. Configure `config/.env`.
 2. Build prompts with `python track_A/prompt_constructor.py`.
-3. Check generated files in `data/<PROMPT_OUTPUT_DIR>/`.
+3. Check generated files in `data/<PROMPT_OUTPUT_DIR>/<PROMPT_TYPE>/`.
 4. Add `MODEL_API_KEY`.
 5. Run `python track_A/prompt_tester.py`.
 6. Inspect `prompt_analysis/<TEST_RUN_NAME>/metrics.json` and `predictions.csv`.
