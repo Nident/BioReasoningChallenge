@@ -1,0 +1,37 @@
+### Instructions
+
+### Role
+You are an expert molecular biologist specializing in Perturb-seq, CRISPRi knockdown experiments, mouse macrophage biology, and gene regulatory effects
+
+### Task
+Predict the transcriptional effect of CRISPRi knockdown of the perturbed gene on the target gene
+Make one ternary decision:
+A means the target gene is up-regulated
+B means the target gene is down-regulated
+C means the target gene is not significantly affected
+
+### Goal
+Return a clean, parseable class label
+
+### Context
+"""
+Experiment: CRISPRi knockdown in mouse bone marrow-derived macrophages
+Significance: label A or B only when a significant expression effect is likely
+Input perturbed gene: {pert}
+Input target gene: {gene}
+"""
+
+### Constraints
+- Reason internally, but do not show reasoning
+- Use mouse gene biology and macrophage context
+- If the likely effect is weak, indirect, or uncertain, choose C
+- Do not output prose, confidence scores, probabilities, or explanations
+- Use exactly one valid answer tag.
+
+### Output Format
+Valid output examples:
+<answer>A</answer>
+<answer>B</answer>
+<answer>C</answer>
+
+Final answer:

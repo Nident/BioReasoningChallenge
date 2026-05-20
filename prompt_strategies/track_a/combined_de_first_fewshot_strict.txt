@@ -23,7 +23,6 @@ Produce one clean answer token that is useful for AUROC ranking:
 
 ### Context
 """
-Cell type: {cell_desc}
 Study design: genome-scale CRISPRi Perturb-seq in mouse BMDMs.
 Perturbation mechanism: transcriptional repression of the perturbed gene.
 Label threshold concept: significant if FDR < 0.05 and abs(shrunken log2 fold-change) >= log2(1.5).
@@ -100,4 +99,3 @@ Perturbed gene: {pert}
 Target gene: {gene}
 
 Final answer:
-

@@ -17,7 +17,6 @@ Optimize the two parts of the competition metric:
 
 ### Context
 """
-Cell type: {cell_desc}
 Perturbation mechanism: CRISPRi transcriptional repression of the perturbed gene.
 Ground-truth concept: significant expression change uses FDR < 0.05 and abs(shrunken log2 fold-change) >= log2(1.5).
 Perturbed gene: {pert}
@@ -43,4 +42,3 @@ Examples of valid final outputs:
 <answer>C</answer>
 
 Final answer:
-

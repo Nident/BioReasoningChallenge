@@ -1,8 +1,7 @@
 # Track A Prompt Strategy Pack
 
 This folder contains prompt templates for the BioReasoning Challenge Track A.
-All templates use only placeholders supported by `examples/track_a_prompt_only.py`
-and `examples/track_a_logprobs.py`: `{pert}`, `{gene}`, and `{cell_desc}`.
+All templates use only `{pert}` and `{gene}` placeholders.
 
 Recommended escalation order:
 
@@ -32,4 +31,3 @@ Why logprobs are preferred:
 Few-shot examples are listed in `few_shot_examples_from_train.csv`. They are
 real rows from `data/train.csv`, selected to balance `up`, `down`, and `none`
 and to calibrate the model toward choosing `C` when significant evidence is weak.
-
