@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
+from dotenv import load_dotenv
 from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support
 
 try:
     from .model import Model
 except ImportError:
     from model import Model
+
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 
 class PromptTester:
@@ -190,3 +195,54 @@ class PromptTester:
         if value not in self.LABELS:
             raise ValueError(f"Unexpected label: {value}")
         return str(value)
+
+
+def _env(name: str) -> str:
+    value = os.getenv(name, "")
+    if not value:
+        raise ValueError(f"{name} is required")
+    return value
+
+
+def _project_path(path_value: str | Path) -> Path:
+    path = Path(path_value)
+    if path.is_absolute():
+        return path
+    return ROOT_DIR / path
+
+
+if __name__ == "__main__":
+    load_dotenv(ROOT_DIR / "config" / ".env")
+
+    max_samples_raw = os.getenv("TEST_MAX_SAMPLES", "").strip().lower()
+    max_samples = None if max_samples_raw in {"", "none", "null"} else int(max_samples_raw)
+
+    label_column_raw = os.getenv("TEST_LABEL_COLUMN", "label").strip()
+    label_column = label_column_raw or None
+
+    model = Model(
+        model_name=_env("MODEL_NAME"),
+        api_key=_env("MODEL_API_KEY"),
+        base_url=os.getenv("MODEL_BASE_URL", ""),
+        temperature=float(os.getenv("MODEL_TEMPERATURE", "0")),
+        max_tokens=int(os.getenv("MODEL_MAX_TOKENS", "32")),
+        top_p=float(os.getenv("MODEL_TOP_P", "1")),
+    )
+    tester = PromptTester(
+        model=model,
+        cache_dir=_project_path(os.getenv("TEST_CACHE_DIR", ".prompt_cache")),
+        max_samples=max_samples,
+    )
+
+    prompts = pd.read_csv(_project_path(_env("TEST_PROMPTS_PATH")))
+    run_name = _env("TEST_RUN_NAME")
+    tester.run(
+        data=prompts,
+        run_name=run_name,
+        prompt_column=os.getenv("TEST_PROMPT_COLUMN", "prompt"),
+        label_column=label_column,
+        id_column=os.getenv("TEST_ID_COLUMN", "id"),
+    )
+    tester.print_results(run_name)
+    tester.save_analysis(_project_path(_env("TEST_OUTPUT_DIR")))
+    print(f"Saved analysis: {_project_path(_env('TEST_OUTPUT_DIR'))}")

@@ -1,3 +1,0 @@
-Prompt,Accuracy,F1 (weighted),F1 (macro),Precision,Recall,Balanced Acc,Valid Samples,Errors,Unparseable
-00_zero_shot_strict.txt,0,0,0,0,0,0,0,0,5
-04_combined_de_first_fewshot_strict.txt,0,0,0,0,0,0,0,0,5

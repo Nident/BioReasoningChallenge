@@ -6,3 +6,4 @@ config/.env
 !config/.env.example
 
 data/built_prompts
+prompt_analysis
