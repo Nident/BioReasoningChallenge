@@ -3,4 +3,5 @@ __pycache__/
 .ipynb_checkpoints/
 *.pyc
 config/.env
+!config/.env.example
 data/build_prompts/
