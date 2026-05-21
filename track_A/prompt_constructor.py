@@ -21,7 +21,9 @@ PromptType = Literal[
     "combined_de_first_fewshot_strict",
     "finetune_inference_prompt",
     "new",
-    "ArticleGpt"
+    "ArticleGpt",
+    "mostValubale",
+    "tracka"
 ]
 
 
@@ -34,7 +36,9 @@ class PromptConstructor:
         "combined_de_first_fewshot_strict",
         "finetune_inference_prompt",
         "new",
-        "ArticleGpt"
+        "ArticleGpt",
+        "mostValubale",
+        "tracka"
     }
     LABEL_TO_ANSWER = {
         "up": "<answer>A</answer>",
