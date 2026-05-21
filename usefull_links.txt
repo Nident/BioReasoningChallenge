@@ -3,3 +3,4 @@
 - https://www.bindingdb.org/rwd/bind/index.jsp
 - https://crisprdb.org/
 - https://bioptic.io/blog/teaching-ai-agents-to-think-like-biotech-analysts
+- https://arxiv.org/pdf/2503.04347 
