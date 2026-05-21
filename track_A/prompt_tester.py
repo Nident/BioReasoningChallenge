@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -22,9 +23,13 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 
 class PromptTester:
     ANSWER_TO_LABEL = {
-        "<answer>A</answer>": "up",
-        "<answer>B</answer>": "down",
-        "<answer>C</answer>": "none",
+        "<answer>a</answer>": "up",
+        "<answer>b</answer>": "down",
+        "<answer>c</answer>": "none",
+        "up": "up",
+        "down": "down",
+        "none": "none",
+        "no-change": "none",
     }
     LABELS = {"up", "down", "none"}
 
@@ -33,11 +38,13 @@ class PromptTester:
         model: Model,
         cache_dir: str | Path = ".prompt_cache",
         max_samples: int | None = None,
+        max_retries: int = 3,
     ) -> None:
         self.model = model
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         self.max_samples = max_samples
+        self.max_retries = max_retries
         self.results: dict[str, dict] = {}
 
     def run(
@@ -47,6 +54,7 @@ class PromptTester:
         prompt_column: str = "prompt",
         label_column: str | None = "label",
         id_column: str = "id",
+        output_dir: str | Path | None = None,
     ) -> dict:
         self._expect_columns(data, [id_column, prompt_column])
         if label_column:
@@ -56,6 +64,15 @@ class PromptTester:
         if rows.empty:
             raise ValueError("data is empty")
 
+        output_path: Path | None = None
+        run_dir: Path | None = None
+        if output_dir is not None:
+            output_path = Path(output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+            run_dir = output_path / run_name
+            run_dir.mkdir(parents=True, exist_ok=True)
+            (run_dir / "responses.jsonl").write_text("", encoding="utf-8")
+
         records = []
 
         for _, row in rows.iterrows():
@@ -63,17 +80,41 @@ class PromptTester:
             prompt = self._expect_str(row[prompt_column], prompt_column)
             label = self._expect_label(row[label_column]) if label_column else None
             response = self._request(prompt, sample_id, run_name)
-            prediction = self._parse_response(response)
+            prediction = ""
+            parse_error: ValueError | None = None
+            if response:
+                try:
+                    prediction = self._parse_response(response)
+                except ValueError as error:
+                    parse_error = error
 
-            records.append(
-                {
-                    "id": sample_id,
-                    "label": label,
-                    "prediction": prediction,
-                    "response": response,
-                    "prompt": prompt,
+            record = {
+                "id": sample_id,
+                "label": label,
+                "prediction": prediction,
+                "response": response,
+                "prompt": prompt,
+            }
+            records.append(record)
+
+            if output_path is not None and run_dir is not None:
+                with open(run_dir / "responses.jsonl", "a", encoding="utf-8") as file:
+                    file.write(json.dumps(record, ensure_ascii=False) + "\n")
+                result = {
+                    "run_name": run_name,
+                    "records": records,
+                    "metrics": self._metrics(records),
                 }
-            )
+                self.results[run_name] = result
+                pd.DataFrame(records).to_csv(run_dir / "predictions.csv", index=False)
+                (run_dir / "metrics.json").write_text(
+                    json.dumps(result["metrics"], ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                self.compare().to_csv(output_path / "comparison.csv", index=False)
+
+            if parse_error is not None:
+                raise parse_error
 
         result = {
             "run_name": run_name,
@@ -133,9 +174,24 @@ class PromptTester:
 
         if cache_path.exists():
             payload = json.loads(cache_path.read_text(encoding="utf-8"))
-            return self._expect_str(payload["response"], "cached response")
+            response = payload["response"]
+            if not isinstance(response, str):
+                raise TypeError("cached response must be a string")
+            return response
 
-        response = self.model.request(prompt)
+        response = ""
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                response = self.model.request(prompt)
+            except ValueError as error:
+                if str(error) != "model returned empty response":
+                    raise
+                response = ""
+
+            if response:
+                break
+            time.sleep(attempt)
+
         cache_path.write_text(
             json.dumps(
                 {"response": response, "saved_at": datetime.now().isoformat()},
@@ -146,20 +202,31 @@ class PromptTester:
         return response
 
     def _parse_response(self, response: str) -> str:
-        if response not in self.ANSWER_TO_LABEL:
+        normalized_response = response.strip().lower()
+        if normalized_response not in self.ANSWER_TO_LABEL:
             raise ValueError(f"Unexpected model response: {response}")
-        return self.ANSWER_TO_LABEL[response]
+        return self.ANSWER_TO_LABEL[normalized_response]
 
     def _metrics(self, records: list[dict]) -> dict:
-        labels = [record["label"] for record in records]
-        predictions = [record["prediction"] for record in records]
+        evaluated_records = [record for record in records if record["prediction"] in self.LABELS]
+        labels = [record["label"] for record in evaluated_records]
+        predictions = [record["prediction"] for record in evaluated_records]
+        skipped_samples = len(records) - len(evaluated_records)
 
         if any(label is None for label in labels):
             return {
                 "total_samples": len(records),
+                "evaluated_samples": len(evaluated_records),
+                "skipped_samples": skipped_samples,
                 "prediction_up": predictions.count("up"),
                 "prediction_down": predictions.count("down"),
                 "prediction_none": predictions.count("none"),
+            }
+        if not evaluated_records:
+            return {
+                "total_samples": len(records),
+                "evaluated_samples": 0,
+                "skipped_samples": skipped_samples,
             }
 
         precision, recall, f1, _ = precision_recall_fscore_support(
@@ -172,7 +239,9 @@ class PromptTester:
 
         return {
             "total_samples": len(records),
-            "accuracy": round(sum(a == b for a, b in zip(labels, predictions)) / len(records), 4),
+            "evaluated_samples": len(evaluated_records),
+            "skipped_samples": skipped_samples,
+            "accuracy": round(sum(a == b for a, b in zip(labels, predictions)) / len(evaluated_records), 4),
             "precision": round(float(precision), 4),
             "recall": round(float(recall), 4),
             "f1_weighted": round(float(f1), 4),
@@ -232,6 +301,7 @@ if __name__ == "__main__":
         model=model,
         cache_dir=_project_path(os.getenv("TEST_CACHE_DIR", ".prompt_cache")),
         max_samples=max_samples,
+        max_retries=int(os.getenv("TEST_MAX_RETRIES", "3")),
     )
 
     prompts = pd.read_csv(_project_path(_env("TEST_PROMPTS_PATH")))
@@ -242,6 +312,7 @@ if __name__ == "__main__":
         prompt_column=os.getenv("TEST_PROMPT_COLUMN", "prompt"),
         label_column=label_column,
         id_column=os.getenv("TEST_ID_COLUMN", "id"),
+        output_dir=_project_path(_env("TEST_OUTPUT_DIR")),
     )
     tester.print_results(run_name)
     tester.save_analysis(_project_path(_env("TEST_OUTPUT_DIR")))

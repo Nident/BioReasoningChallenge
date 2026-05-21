@@ -10,3 +10,5 @@ prompt_analysis
 
 test.ipynb
 .prompt_cache/
+
+.DS_Store
