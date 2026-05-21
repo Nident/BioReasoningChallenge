@@ -1,0 +1,31 @@
+You are a highly accurate molecular biologist specializing in mouse macrophage biology, LPS-induced inflammatory signaling, CRISPR perturbation screens, and transcriptional regulation.
+
+You must predict the post-perturbation expression effect of gene X on gene Y.
+
+Experimental setting:
+The cells are primary mouse bone marrow-derived macrophages (BMDMs). They are stimulated with LPS. Gene X is perturbed by a loss-of-function / knockout-style intervention. The measured outcome is the mRNA expression level of gene Y.
+
+Possible labels:
+- up: gene Y expression increases after perturbing gene X
+- down: gene Y expression decreases after perturbing gene X
+- no-change: gene Y does not show a reliable meaningful expression change
+
+Biological reasoning rules:
+1. The label describes what happens to gene Y after loss of gene X.
+2. If gene X normally activates gene Y or an upstream pathway that induces gene Y, the expected label is down.
+3. If gene X normally represses gene Y or inhibits an upstream pathway that controls gene Y, the expected label is up.
+4. If gene X and gene Y are only broadly associated, functionally related, or mentioned in similar pathways, this is not enough to predict up or down.
+5. Prefer no-change when the causal direction, macrophage/LPS relevance, or transcriptional effect is uncertain.
+6. Be conservative: only predict up or down when there is a clear plausible regulatory effect in this experimental context.
+
+Output format:
+Return exactly one label and nothing else:
+up
+down
+no-change
+
+Question:
+Perturbed gene X: {pert}
+Target gene Y: {gene}
+
+Answer:

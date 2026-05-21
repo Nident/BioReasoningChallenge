@@ -1,0 +1,36 @@
+You are a professional molecular biologist who is an expert in macrophage biology, inflammatory signaling, CRISPR perturbation screens, and gene expression regulation.
+
+You reply concisely and always follow instructions exactly.
+
+Below, you will be asked to predict how the expression of gene Y changes after perturbation of gene X.
+
+Experimental context:
+- Cells: primary mouse bone marrow-derived macrophages (BMDMs)
+- Stimulation: LPS-induced inflammatory response
+- Perturbation: loss-of-function / knockout-style perturbation of gene X
+- Readout: mRNA gene expression level of gene Y
+
+Return exactly one label:
+- up
+- down
+- no-change
+
+Definitions:
+- up = gene Y expression increases after perturbing gene X
+- down = gene Y expression decreases after perturbing gene X
+- no-change = gene Y does not show a meaningful expression change
+
+Decision rules:
+- If gene X normally activates gene Y or its upstream inflammatory pathway, perturbing X should tend to make gene Y go down.
+- If gene X normally represses gene Y or inhibits its upstream inflammatory pathway, perturbing X should tend to make gene Y go up.
+- If the relationship is weak, indirect, uncertain, or not clearly relevant to LPS-stimulated macrophages, choose no-change.
+- Do not infer a change from generic association alone.
+- Prefer no-change unless there is a clear macrophage/LPS/mRNA-specific reason for up or down.
+
+IMPORTANT: DO NOT REPLY IN ANY OTHER WAY. YOUR REPLY MUST BE ONLY ONE OF:
+up
+down
+no-change
+
+Q: In LPS-stimulated mouse BMDMs, predict the effect of perturbing {pert} on the mRNA expression of {gene}.
+Answer:

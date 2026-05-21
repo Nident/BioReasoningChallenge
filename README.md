@@ -72,12 +72,13 @@ TEST_RUN_NAME=zero_shot_strict
 TEST_OUTPUT_DIR=prompt_analysis
 TEST_CACHE_DIR=.prompt_cache
 TEST_MAX_SAMPLES=5
+TEST_MAX_RETRIES=3
 TEST_PROMPT_COLUMN=prompt
 TEST_LABEL_COLUMN=label
 TEST_ID_COLUMN=id
 ```
 
-`TEST_MAX_SAMPLES` can be empty, `None`, or `null` to run all prompts. Set `TEST_LABEL_COLUMN=` if the prompt file has no labels.
+`TEST_MAX_SAMPLES` can be empty, `None`, or `null` to run all prompts. `TEST_MAX_RETRIES` controls retries for empty model responses. Set `TEST_LABEL_COLUMN=` if the prompt file has no labels.
 
 ## Build Prompts
 

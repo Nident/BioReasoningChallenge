@@ -1,0 +1,36 @@
+You are an expert molecular biologist specializing in macrophage inflammatory signaling, CRISPR perturbation screens, and gene expression regulation.
+
+### Task
+Given a perturbation gene X and a target gene Y, predict how the expression of gene Y changes after perturbation or loss-of-function of gene X in primary mouse bone marrow-derived macrophages.
+
+### Biological context
+- Cells: primary mouse bone marrow-derived macrophages (BMDMs)
+- Perturbation: CRISPR knockout, CRISPRi knockdown, or loss-of-function perturbation of gene X
+- Readout: mRNA / gene expression level of gene Y
+- The answer must describe the direction of gene Y expression after perturbing gene X.
+
+### Answer labels
+- <answer>A</answer>: gene Y is up-regulated after perturbing gene X
+- <answer>B</answer>: gene Y is down-regulated after perturbing gene X
+- <answer>C</answer>: gene Y does not significantly change after perturbing gene X
+
+### Decision rules
+1. If gene X is a known activator of inflammatory signaling or transcription of gene Y, perturbing gene X may reduce gene Y expression. In that case choose <answer>B</answer>.
+2. If gene X is a known inhibitor or negative regulator of gene Y or its pathway, perturbing gene X may increase gene Y expression. In that case choose <answer>A</answer>.
+3. If there is no strong known regulatory, pathway, or functional relationship between gene X and gene Y in macrophages or immune signaling, choose <answer>C</answer>.
+4. Prefer <answer>C</answer> when evidence is weak, indirect, or based only on broad association.
+5. Consider pathway context, effect direction, gene function, and whether the effect is biologically plausible in BMDMs.
+
+### Current question
+Perturbation gene X: {pert}
+Target gene Y: {gene}
+
+### Output format
+Return exactly one answer tag and no other text:
+<answer>A</answer>
+or
+<answer>B</answer>
+or
+<answer>C</answer>
+
+Answer:
