@@ -281,7 +281,7 @@ def _project_path(path_value: str | Path) -> Path:
 
 
 if __name__ == "__main__":
-    load_dotenv(ROOT_DIR / "config" / ".env")
+    load_dotenv(ROOT_DIR / "config" / "track_A" / ".env")
 
     max_samples_raw = os.getenv("TEST_MAX_SAMPLES", "").strip().lower()
     max_samples = None if max_samples_raw in {"", "none", "null"} else int(max_samples_raw)
