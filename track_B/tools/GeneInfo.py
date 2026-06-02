@@ -68,21 +68,21 @@ class GeneInfo:
             },
         )
 
-    def get_enrichment(self, string_ids: list[str]) -> pd.DataFrame:
-        """
-        Gets GO / KEGG / Reactome / Pfam / etc. enrichment for gene set.
-        For only 1-2 genes, enrichment may be sparse, but still useful.
-        """
-        if not string_ids:
-            return pd.DataFrame()
+        # def get_enrichment(self, string_ids: list[str]) -> pd.DataFrame:
+        #     """
+        #     Gets GO / KEGG / Reactome / Pfam / etc. enrichment for gene set.
+        #     For only 1-2 genes, enrichment may be sparse, but still useful.
+        #     """
+        #     if not string_ids:
+        #         return pd.DataFrame()
 
-        return self._get_tsv(
-            "enrichment",
-            {
-                "identifiers": "\r".join(string_ids),
-                "species": self.species,
-            },
-        )
+        #     return self._get_tsv(
+        #         "enrichment",
+        #         {
+        #             "identifiers": "\r".join(string_ids),
+        #             "species": self.species,
+        #         },
+        #     )
 
     def get_interaction_partners(
         self,
@@ -189,7 +189,10 @@ class GeneInfo:
         ]
 
         annotation_df = self.get_gene_annotation(string_ids)
-        enrichment_df = self.get_enrichment(string_ids)
+        # enrichment_df = self.get_enrichment(string_ids)
+
+        print("Enrichment DataFrame:")
+        annotation_df.to_csv("annotation_df.tsv", sep="\t", index=False)
 
         partners = {}
 
@@ -205,6 +208,7 @@ class GeneInfo:
                 required_score=required_score,
             )
 
+            partners_df.to_csv(f"{gene}_partners_df.tsv", sep="\t", index=False)
             partners[gene] = self._df_records(partners_df, max_rows=partner_limit)
 
         return {
@@ -214,7 +218,7 @@ class GeneInfo:
             "missing_genes": missing,
             "mapping": mapping_by_query,
             "functional_annotation": self._df_records(annotation_df),
-            "enrichment": self._df_records(enrichment_df, max_rows=enrichment_max_rows),
+            # "enrichment": self._df_records(enrichment_df, max_rows=enrichment_max_rows),
             "interaction_partners": partners,
         }
     
@@ -227,4 +231,5 @@ if __name__ == "__main__":
 
     result = client.get_pair_gene_info("Slc35b1", "Pdia6")
 
-    print(json.dumps(result, indent=2))
+    with open("gene_info.json", "w") as f:
+        json.dump(result, f, indent=2)
