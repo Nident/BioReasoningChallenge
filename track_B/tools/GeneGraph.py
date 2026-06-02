@@ -6,7 +6,7 @@ import random
 from typing import Any
 
 
-class GetPath:
+class GeneGraph:
     def __init__(self, pert, target, required_score=400, add_nodes=20,
                  n_random_paths=3, random_path_cutoff=5, top_k_paths=3):
         self.pert = pert
@@ -207,6 +207,6 @@ if __name__ == "__main__":
     pert = "Cebpb"
     target = "Brd8dc"
 
-    gp = GetPath(pert, target)
+    gp = GeneGraph(pert, target)
     result = gp.get_path()
     print(result)
