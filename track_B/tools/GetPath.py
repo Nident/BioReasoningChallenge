@@ -7,11 +7,15 @@ from typing import Any
 
 
 class GetPath:
-    def __init__(self, pert, target, required_score=400, add_nodes=20):
+    def __init__(self, pert, target, required_score=400, add_nodes=20,
+                 n_random_paths=3, random_path_cutoff=5, top_k_paths=3):
         self.pert = pert
         self.target = target
         self.required_score = required_score
         self.add_nodes = add_nodes
+        self.n_random_paths = n_random_paths
+        self.top_k_paths = top_k_paths
+        self.random_path_cutoff = random_path_cutoff
 
         self.STRING_URL = "https://string-db.org/api"
         self.SPECIES = 10090  # mouse
@@ -48,7 +52,7 @@ class GetPath:
 
         return G
     
-    def get_top_k_paths(self, G, source, target, k=3):
+    def get_top_k_paths(self, G, source, target):
         try:
             paths_gen = nx.shortest_simple_paths(G, source=source, target=target)
             paths = []
@@ -59,7 +63,7 @@ class GetPath:
                     "path_length": len(path) - 1
                 })
 
-                if len(paths) >= k:
+                if len(paths) >= self.top_k_paths:
                     break
 
             return paths
@@ -68,13 +72,13 @@ class GetPath:
             return []
         
 
-    def get_random_paths(self, G, source, target, n=3, cutoff=5):
+    def get_random_paths(self, G, source, target):
         try:
             all_paths_gen = nx.all_simple_paths(
                 G,
                 source=source,
                 target=target,
-                cutoff=cutoff
+                cutoff=self.random_path_cutoff
             )
 
             paths = list(all_paths_gen)
@@ -82,7 +86,7 @@ class GetPath:
             if not paths:
                 return []
 
-            sampled = random.sample(paths, min(n, len(paths)))
+            sampled = random.sample(paths, min(self.n_random_paths, len(paths)))
 
             return [
                 {
@@ -172,7 +176,7 @@ class GetPath:
             result["direct_score"] = G[self.pert][self.target].get("score")
 
         try:
-            top_paths = self.get_top_k_paths(G, self.pert, self.target, k=3)
+            top_paths = self.get_top_k_paths(G, self.pert, self.target)
 
             result["top_paths"] = top_paths
 
@@ -186,9 +190,7 @@ class GetPath:
             result["random_paths"] = self.get_random_paths(
                 G,
                 self.pert,
-                self.target,
-                n=3,
-                cutoff=5
+                self.target
             )
 
         except Exception:
