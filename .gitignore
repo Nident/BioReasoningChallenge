@@ -1,8 +1,7 @@
 .DS_Store
 __pycache__
 
-config/track_A/.env
-config/track_B/.env
+.env
 .prompt_cache/
 .venv/
 

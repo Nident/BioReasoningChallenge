@@ -2,13 +2,16 @@ import networkx as nx
 from io import StringIO
 import requests
 import pandas as pd
+import random
+from typing import Any
+
 
 class GetPath:
     def __init__(self, pert, target, required_score=400, add_nodes=20):
         self.pert = pert
         self.target = target
         self.required_score = required_score
-        self.add_nodes = add_nodes or []
+        self.add_nodes = add_nodes
 
         self.STRING_URL = "https://string-db.org/api"
         self.SPECIES = 10090  # mouse
@@ -44,11 +47,64 @@ class GetPath:
             G.add_edge(a, b, score=score)
 
         return G
+    
+    def get_top_k_paths(self, G, source, target, k=3):
+        try:
+            paths_gen = nx.shortest_simple_paths(G, source=source, target=target)
+            paths = []
 
-    def get_network_interactions(self, string_ids, species=None, required_score=None, add_nodes=None):
+            for path in paths_gen:
+                paths.append({
+                    "path": path,
+                    "path_length": len(path) - 1
+                })
+
+                if len(paths) >= k:
+                    break
+
+            return paths
+
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return []
+        
+
+    def get_random_paths(self, G, source, target, n=3, cutoff=5):
+        try:
+            all_paths_gen = nx.all_simple_paths(
+                G,
+                source=source,
+                target=target,
+                cutoff=cutoff
+            )
+
+            paths = list(all_paths_gen)
+
+            if not paths:
+                return []
+
+            sampled = random.sample(paths, min(n, len(paths)))
+
+            return [
+                {
+                    "path": path,
+                    "path_length": len(path) - 1
+                }
+                for path in sampled
+            ]
+
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return []
+
+    def get_network_interactions(
+        self,
+        string_ids,
+        species=None,
+        required_score=None,
+        add_nodes=None,
+    ):
         species = species or self.SPECIES
         required_score = required_score or self.required_score
-        add_nodes = add_nodes or self.add_nodes
+        add_nodes = self.add_nodes if add_nodes is None else add_nodes
 
         text = self.string_get("network", {
             "identifiers": "\r".join(string_ids),
@@ -59,28 +115,26 @@ class GetPath:
         })
         return pd.read_csv(StringIO(text), sep="\t")
     
-    def get_path(self):
-        from time import sleep
-
+    def get_path(self) -> dict[str, Any]:
         mapped = self.map_string_ids([self.pert, self.target], species=self.SPECIES)
 
         if mapped.empty:
-            print({
+            return {
                 "pert": self.pert,
                 "target": self.target,
                 "status": "mapping_failed",
                 "evidence": "STRING mapping failed for one or both genes."
-            })
+            }
 
         mapping = dict(zip(mapped["queryItem"], mapped["stringId"]))
 
         if self.pert not in mapping or self.target not in mapping:
-            print({
+            return {
                 "pert": self.pert,
                 "target": self.target,
                 "status": "mapping_failed",
                 "evidence": "STRING mapping failed for one or both genes."
-            })
+            }
 
         edges = self.get_network_interactions(
             [mapping[self.pert], mapping[self.target]],
@@ -93,12 +147,12 @@ class GetPath:
 
 
         if edges.empty:
-            print({
+            return {
                 "pert": self.pert,
                 "target": self.target,
                 "status": "no_edges",
                 "evidence": "No STRING network edges returned."
-            })
+            }
 
         G = self.build_string_graph(edges)
 
@@ -118,10 +172,28 @@ class GetPath:
             result["direct_score"] = G[self.pert][self.target].get("score")
 
         try:
-            path = nx.shortest_path(G, source=self.pert, target=self.target)
-            result["shortest_path"] = path
-            result["path_length"] = len(path) - 1
+            top_paths = self.get_top_k_paths(G, self.pert, self.target, k=3)
+
+            result["top_paths"] = top_paths
+
+            if top_paths:
+                result["shortest_path"] = top_paths[0]["path"]
+                result["path_length"] = top_paths[0]["path_length"]
+            else:
+                result["shortest_path"] = None
+                result["path_length"] = None
+
+            result["random_paths"] = self.get_random_paths(
+                G,
+                self.pert,
+                self.target,
+                n=3,
+                cutoff=5
+            )
+
         except Exception:
+            result["top_paths"] = []
+            result["random_paths"] = []
             result["shortest_path"] = None
             result["path_length"] = None
 
