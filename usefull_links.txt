@@ -1,4 +1,4 @@
-- https://curiositybloom.com/ai-prompts-for-biology-prompt-engineering-guide/
+ - https://curiositybloom.com/ai-prompts-for-biology-prompt-engineering-guide/
 - https://genentech.github.io/BioReasoningChallenge/
 - https://bioptic.io/blog/teaching-ai-agents-to-think-like-biotech-analysts
 - https://arxiv.org/pdf/2503.04347 
