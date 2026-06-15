@@ -1,0 +1,46 @@
+prompt: |-
+  You are deciding which external tools are needed to evaluate one Perturb-seq hypothesis.
+
+  You do not execute tools. You only choose a small, safe tool plan.
+
+  Question:
+  {question}
+
+  Perturbation gene:
+  {pert_gene}
+
+  Target gene:
+  {target_gene}
+
+  Hypothesis JSON:
+  {hypothesis}
+
+  Available tools JSON:
+  {available_tools}
+
+  Previous memory JSON:
+  {memory}
+
+  Rules:
+  - Choose at most {max_tool_calls} tool calls.
+  - Use only tool names from Available tools JSON.
+  - Use args keys exactly as the tool schema says.
+  - For gene-pair tools, use pert="{pert_gene}" and gene="{target_gene}".
+  - Prefer gene_pair_info when functional annotations may help evaluate plausibility.
+  - Prefer gene_graph_paths when graph connectivity, paths, or common neighbors may help.
+  - Return an empty tool_calls list if tools would not add useful evidence.
+  - Do not reveal hidden chain-of-thought. Use compact public reasons only.
+
+  Return strict JSON only:
+  {{
+    "tool_calls": [
+      {{
+        "tool_name": "gene_pair_info",
+        "args": {{
+          "pert": "{pert_gene}",
+          "gene": "{target_gene}"
+        }},
+        "reason": "short reason for using this tool"
+      }}
+    ]
+  }}

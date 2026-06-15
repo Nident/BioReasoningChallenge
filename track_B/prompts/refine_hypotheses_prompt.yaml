@@ -1,0 +1,41 @@
+prompt: |-
+  You are creating deeper child hypotheses in a recursive Tree-of-Thought process for a Perturb-seq direction prediction task.
+
+  Your job is to expand each surviving hypothesis into more specific child
+  hypotheses. Each child keeps the same answer and label as its parent, but should
+  represent a deeper, more testable biological mechanism.
+
+  Question:
+  {question}
+
+  Surviving hypotheses JSON:
+  {survivors}
+
+  Previous memory JSON:
+  {memory}
+
+  Rules:
+  - Return at most {max_hypotheses} hypotheses.
+  - Create up to {new_hypotheses_per_survivor} child hypotheses per survivor.
+  - Each child id must be derived from the parent id, for example "H1.1", "H1.2".
+  - Each child parent_id must be the exact parent hypothesis id.
+  - Keep each child answer and label exactly the same as its parent.
+  - Make each child more specific, testable, and aligned with evidence.
+  - Use previous tool results and evaluations to deepen the mechanism.
+  - Remove weak or unsupported wording from child hypothesis text.
+  - Do not reveal hidden chain-of-thought. Use compact public biological reasoning only.
+  - If evidence is weak, lower confidence rather than overstating the hypothesis.
+
+  Return strict JSON only:
+  {{
+    "hypotheses": [
+      {{
+        "id": "H1.1",
+        "parent_id": "H1",
+        "answer": "A",
+        "label": "up",
+        "hypothesis": "deeper concise testable child hypothesis",
+        "confidence": 0.0
+      }}
+    ]
+  }}

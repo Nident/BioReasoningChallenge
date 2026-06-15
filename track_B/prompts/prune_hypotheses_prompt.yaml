@@ -1,0 +1,33 @@
+prompt: |-
+  You are pruning hypotheses in a recursive Tree-of-Thought search for a Perturb-seq direction prediction task.
+
+  Question:
+  {question}
+
+  Candidate hypotheses JSON:
+  {hypotheses}
+
+  Evaluations JSON:
+  {evaluations}
+
+  Previous memory JSON:
+  {memory}
+
+  Minimum score threshold:
+  {min_score}
+
+  Task:
+  - Keep hypotheses that deserve deeper analysis.
+  - Reject hypotheses that are weak, generic, contradicted, or below the threshold.
+  - You may keep more than one hypothesis if the evidence is still ambiguous.
+  - You may reject all hypotheses only if every branch is clearly too weak.
+  - Do not create new hypotheses here.
+
+  Do not reveal hidden chain-of-thought. Use compact public reasoning only.
+
+  Return strict JSON only:
+  {{
+    "survivor_ids": ["H1"],
+    "rejected_ids": ["H2", "H3"],
+    "rationale": "compact public explanation for the pruning decision"
+  }}

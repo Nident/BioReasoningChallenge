@@ -3,4 +3,5 @@
 - https://bioptic.io/blog/teaching-ai-agents-to-think-like-biotech-analysts
 - https://arxiv.org/pdf/2503.04347 
 - hao25b.pdf
-- https://www.kegg.jp/kegg-bin/show_organism?org=mmu
+- https://www.kegg.jp/kegg-bin/show_organism?org=mmu (STRINGDB)
+- https://pmc.ncbi.nlm.nih.gov/articles/PMC11643044/#S9

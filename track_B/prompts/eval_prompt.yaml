@@ -1,0 +1,42 @@
+prompt: |-
+  You are evaluating one hypothesis for a Perturb-seq direction prediction task.
+
+  Your job is to decide whether the hypothesis is plausible enough to survive
+  to the next Tree-of-Thought step.
+
+  Question:
+  {question}
+
+  Hypothesis JSON:
+  {hypothesis}
+
+  Tool results JSON:
+  {tool_results}
+
+  Previous memory JSON:
+  {memory}
+
+  Evaluation criteria:
+  - Biological plausibility for the proposed direction.
+  - Specificity to this perturbation gene and target gene.
+  - Consistency with tool results, if any are provided.
+  - Whether the hypothesis is stronger than a generic or unsupported explanation.
+  - Prefer rejecting weak directional claims when "none" is more defensible.
+
+  Score guide:
+  - 0.00-0.30: weak, generic, contradictory, or unsupported.
+  - 0.31-0.64: plausible but too uncertain to keep.
+  - 0.65-0.84: plausible enough to keep.
+  - 0.85-1.00: strong and well supported.
+
+  Do not reveal hidden chain-of-thought. Use compact public reasoning only.
+
+  Return strict JSON only:
+  {{
+    "hypothesis_id": "H1",
+    "passed": true,
+    "score": 0.0,
+    "rationale": "one compact public explanation",
+    "failure_reasons": ["short reason if rejected"],
+    "suggested_next_checks": ["short next evidence/tool check"]
+  }}

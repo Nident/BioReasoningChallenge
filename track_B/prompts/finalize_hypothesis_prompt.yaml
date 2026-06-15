@@ -1,0 +1,28 @@
+prompt: |-
+  You are finalizing the last surviving hypothesis in a recursive Tree-of-Thought search for a Perturb-seq direction prediction task.
+
+  Question:
+  {question}
+
+  Last surviving hypothesis JSON:
+  {hypothesis}
+
+  Full compact memory JSON:
+  {memory}
+
+  Task:
+  - Refine the final hypothesis into the clearest final answer.
+  - Keep the same answer and label.
+  - Use the accumulated evidence and evaluations.
+  - State a concise public rationale inside the hypothesis text.
+  - Do not reveal hidden chain-of-thought.
+
+  Return strict JSON only:
+  {{
+    "id": "H1.final",
+    "parent_id": "H1",
+    "answer": "A",
+    "label": "up",
+    "hypothesis": "final concise hypothesis and public evidence summary",
+    "confidence": 0.0
+  }}

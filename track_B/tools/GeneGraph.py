@@ -1,9 +1,22 @@
+from pprint import pprint
+
 import networkx as nx
 from io import StringIO
 import requests
 import pandas as pd
 import random
 from typing import Any
+
+
+STRING_EVIDENCE_COLUMNS = {
+    "nscore": "neighborhood",
+    "fscore": "fusion",
+    "pscore": "cooccurrence",
+    "ascore": "coexpression",
+    "escore": "experimental",
+    "dscore": "database",
+    "tscore": "textmining",
+}
 
 
 class GeneGraph:
@@ -37,6 +50,15 @@ class GeneGraph:
         })
         return pd.read_csv(StringIO(text), sep="\t")
     
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        try:
+            if pd.isnull(value):
+                return default
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
     def build_string_graph(self, edges):
         G = nx.Graph()
 
@@ -48,9 +70,54 @@ class GeneGraph:
             if score is None and "combined_score" in row:
                 score = row["combined_score"]
 
-            G.add_edge(a, b, score=score)
+            edge_data = {
+                "score": self._safe_float(score),
+            }
+
+            for column, name in STRING_EVIDENCE_COLUMNS.items():
+                if column in row:
+                    edge_data[column] = self._safe_float(row.get(column))
+                    edge_data[name] = self._safe_float(row.get(column))
+
+            G.add_edge(a, b, **edge_data)
 
         return G
+
+    def edge_report(self, G, source, target):
+        edge = G[source][target]
+
+        return {
+            "source": source,
+            "target": target,
+            "combined_score": edge.get("score", 0.0),
+            "evidence_channels": {
+                name: edge.get(name, 0.0)
+                for name in STRING_EVIDENCE_COLUMNS.values()
+            },
+        }
+
+    def path_report(self, G, path):
+        edge_scores = []
+        edge_reports = []
+
+        for source, target in zip(path[:-1], path[1:]):
+            score = G[source][target].get("score", 0.0)
+            edge_scores.append(score)
+            edge_reports.append(self.edge_report(G, source, target))
+
+        confidence_product = 1.0
+        for score in edge_scores:
+            confidence_product *= score
+
+        return {
+            "path": path,
+            "path_length": len(path) - 1,
+            "edge_scores": edge_scores,
+            "confidence_product": confidence_product,
+            "min_edge_score": min(edge_scores) if edge_scores else 0.0,
+            "sum_edge_score": sum(edge_scores),
+            "edges": edge_reports,
+        }
     
     def get_top_k_paths(self, G, source, target):
         try:
@@ -67,6 +134,36 @@ class GeneGraph:
                     break
 
             return paths
+
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return []
+
+    def get_weighted_paths(self, G, source, target, max_paths=500):
+        try:
+            paths_gen = nx.all_simple_paths(
+                G,
+                source=source,
+                target=target,
+                cutoff=self.random_path_cutoff
+            )
+
+            reports = []
+            for path in paths_gen:
+                reports.append(self.path_report(G, path))
+
+                if len(reports) >= max_paths:
+                    break
+
+            reports.sort(
+                key=lambda item: (
+                    item["confidence_product"],
+                    item["min_edge_score"],
+                    item["sum_edge_score"],
+                ),
+                reverse=True,
+            )
+
+            return reports[:self.top_k_paths]
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
@@ -98,6 +195,39 @@ class GeneGraph:
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
+
+    def get_common_neighbor_report(self, G, source, target, max_items=10):
+        try:
+            common_neighbors = sorted(
+                set(G.neighbors(source)) & set(G.neighbors(target))
+            )
+        except nx.NetworkXError:
+            return []
+
+        report = []
+
+        for neighbor in common_neighbors:
+            source_score = G[source][neighbor].get("score", 0.0)
+            target_score = G[neighbor][target].get("score", 0.0)
+
+            report.append({
+                "neighbor": neighbor,
+                "source_edge_score": source_score,
+                "target_edge_score": target_score,
+                "score_product": source_score * target_score,
+                "source_edge": self.edge_report(G, source, neighbor),
+                "target_edge": self.edge_report(G, neighbor, target),
+            })
+
+        report.sort(
+            key=lambda item: (
+                item["score_product"],
+                item["source_edge_score"] + item["target_edge_score"],
+            ),
+            reverse=True,
+        )
+
+        return report[:max_items]
 
     def get_network_interactions(
         self,
@@ -174,11 +304,27 @@ class GeneGraph:
 
         if G.has_edge(self.pert, self.target):
             result["direct_score"] = G[self.pert][self.target].get("score")
+            result["direct_edge_evidence"] = self.edge_report(
+                G,
+                self.pert,
+                self.target,
+            )
+
+        result["pert_degree"] = G.degree(self.pert) if self.pert in G else 0
+        result["target_degree"] = G.degree(self.target) if self.target in G else 0
+        result["common_neighbors"] = self.get_common_neighbor_report(
+            G,
+            self.pert,
+            self.target,
+        )
+        result["num_common_neighbors"] = len(result["common_neighbors"])
 
         try:
             top_paths = self.get_top_k_paths(G, self.pert, self.target)
+            weighted_paths = self.get_weighted_paths(G, self.pert, self.target)
 
             result["top_paths"] = top_paths
+            result["weighted_paths"] = weighted_paths
 
             if top_paths:
                 result["shortest_path"] = top_paths[0]["path"]
@@ -186,6 +332,15 @@ class GeneGraph:
             else:
                 result["shortest_path"] = None
                 result["path_length"] = None
+
+            if weighted_paths:
+                result["best_weighted_path"] = weighted_paths[0]["path"]
+                result["best_weighted_path_confidence_product"] = weighted_paths[0]["confidence_product"]
+                result["best_weighted_path_min_edge_score"] = weighted_paths[0]["min_edge_score"]
+            else:
+                result["best_weighted_path"] = None
+                result["best_weighted_path_confidence_product"] = 0.0
+                result["best_weighted_path_min_edge_score"] = 0.0
 
             result["random_paths"] = self.get_random_paths(
                 G,
@@ -195,9 +350,13 @@ class GeneGraph:
 
         except Exception:
             result["top_paths"] = []
+            result["weighted_paths"] = []
             result["random_paths"] = []
             result["shortest_path"] = None
             result["path_length"] = None
+            result["best_weighted_path"] = None
+            result["best_weighted_path_confidence_product"] = 0.0
+            result["best_weighted_path_min_edge_score"] = 0.0
 
         return result
 
@@ -209,4 +368,4 @@ if __name__ == "__main__":
 
     gp = GeneGraph(pert, target)
     result = gp.get_path()
-    print(result)
+    pprint(result)

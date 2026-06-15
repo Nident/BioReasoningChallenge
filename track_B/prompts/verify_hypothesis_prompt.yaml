@@ -1,0 +1,39 @@
+prompt: |-
+  You are verifying one hypothesis in a recursive Tree-of-Thought search for a Perturb-seq direction prediction task.
+
+  Question:
+  {question}
+
+  Hypothesis JSON:
+  {hypothesis}
+
+  Tool results JSON:
+  {tool_results}
+
+  Previous memory JSON:
+  {memory}
+
+  Task:
+  - Evaluate whether this hypothesis is biologically plausible.
+  - Use tool results as external evidence when they are available.
+  - Penalize generic explanations, weak specificity, and unsupported directional claims.
+  - Prefer "none" when a directional effect is not supported.
+  - Do not prune here. Only score and explain the hypothesis.
+
+  Score guide:
+  - 0.00-0.30: weak, generic, contradicted, or unsupported.
+  - 0.31-0.64: plausible but weak or uncertain.
+  - 0.65-0.84: plausible enough to keep exploring.
+  - 0.85-1.00: strong and well supported.
+
+  Do not reveal hidden chain-of-thought. Use compact public reasoning only.
+
+  Return strict JSON only:
+  {{
+    "hypothesis_id": "H1",
+    "passed": true,
+    "score": 0.0,
+    "rationale": "one compact public explanation",
+    "failure_reasons": ["short reason if weak or rejected"],
+    "suggested_next_checks": ["short next evidence or reasoning check"]
+  }}

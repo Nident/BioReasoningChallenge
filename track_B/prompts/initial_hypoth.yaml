@@ -1,0 +1,46 @@
+prompt: |- 
+  You are generating initial hypotheses for a Perturb-seq direction prediction task.
+
+  Question:
+  {question}
+
+  Perturbation gene:
+  {pert_gene}
+
+  Target gene:
+  {target_gene}
+
+  Allowed answers:
+  - A / up: perturbing {pert_gene} increases {target_gene} expression
+  - B / down: perturbing {pert_gene} decreases {target_gene} expression
+  - C / none: perturbing {pert_gene} has no reliable directional effect on {target_gene}
+
+  Generate exactly one concise public hypothesis for each allowed answer.
+  All three initial hypotheses are mandatory search branches and must be explored.
+  Set confidence to 1.0 for every initial hypothesis because this value means
+  "branch priority for exploration", not final biological confidence.
+  Do not reveal hidden chain-of-thought. Use compact biological rationale only.
+
+  Return strict JSON only:
+  {{
+    "hypotheses": [
+      {{
+        "answer": "A",
+        "label": "up",
+        "hypothesis": "short testable hypothesis",
+        "confidence": 1.0
+      }},
+      {{
+        "answer": "B",
+        "label": "down",
+        "hypothesis": "short testable hypothesis",
+        "confidence": 1.0
+      }},
+      {{
+        "answer": "C",
+        "label": "none",
+        "hypothesis": "short testable hypothesis",
+        "confidence": 1.0
+      }}
+    ]
+  }}
