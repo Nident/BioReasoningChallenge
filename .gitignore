@@ -7,5 +7,11 @@ __pycache__
 
 
 test.ipynb
+gene_info.json
+
 prompt_analysis/
 data/built_prompts/
+debug/
+
+track_B/*.md
+track_B/tools/*.md
