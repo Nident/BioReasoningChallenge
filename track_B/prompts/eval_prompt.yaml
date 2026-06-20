@@ -21,7 +21,17 @@ prompt: |-
   - Specificity to this perturbation gene and target gene.
   - Consistency with tool results, if any are provided.
   - Whether the hypothesis is stronger than a generic or unsupported explanation.
-  - Prefer rejecting weak directional claims when "none" is more defensible.
+  - Interpret perturbation as loss-of-function/knockout in LPS-stimulated mouse
+    BMDMs.
+  - Do not prefer "none" merely because direct database links are missing.
+    Perturb-seq effects are often indirect through macrophage state,
+    transcriptional stress, RNA Pol II/nuclear transport, NF-kB/AP-1, and LPS
+    response programs.
+  - For Plaur/uPAR-like targets, UP through inflammatory/TLR4/NF-kB/AP-1
+    induction is biologically plausible when the perturbation can increase
+    stress or activation.
+  - Prefer rejecting weak directional claims only when a positive no-effect or
+    opposite-effect mechanism is stronger.
 
   Score guide:
   - 0.00-0.30: weak, generic, contradictory, or unsupported.

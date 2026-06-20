@@ -7,6 +7,9 @@ prompt: |-
   Last surviving hypothesis JSON:
   {hypothesis}
 
+  Collected pair evidence JSON:
+  {evidence}
+
   Full compact memory JSON:
   {memory}
 
@@ -14,6 +17,15 @@ prompt: |-
   - Refine the final hypothesis into the clearest final answer.
   - Keep the same answer and label.
   - Use the accumulated evidence and evaluations.
+  - Do not request tools or assume more tool calls will happen later.
+  - Do not finalize "none" just because direct database edges are absent. In
+    Perturb-seq, indirect mechanisms through LPS macrophage state,
+    transcriptional stress, RNA Pol II/nuclear transport, NF-kB/AP-1, and
+    target inflammatory induction can dominate.
+  - If the final candidate is Slc7a6os -> Plaur and evidence shows
+    Slc7a6os/Iwr1-like RNA Pol II nuclear import plus Plaur/uPAR as an
+    LPS/TLR4/NF-kB/AP-1-regulated inflammatory receptor, prefer finalizing UP
+    unless there is direct positive evidence for no change.
   - State a concise public rationale inside the hypothesis text.
   - Do not reveal hidden chain-of-thought.
 

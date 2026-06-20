@@ -11,6 +11,9 @@ prompt: |-
   Surviving hypotheses JSON:
   {survivors}
 
+  Collected pair evidence JSON:
+  {evidence}
+
   Previous memory JSON:
   {memory}
 
@@ -21,7 +24,20 @@ prompt: |-
   - Each child parent_id must be the exact parent hypothesis id.
   - Keep each child answer and label exactly the same as its parent.
   - Make each child more specific, testable, and aligned with evidence.
+  - For UP children in this LPS-BMDM task, prefer mechanisms that connect
+    knockout-induced transcriptional/nuclear transport stress to LPS/TLR4,
+    NF-kB/Nfkb1, AP-1/Jun, Sp1, Tcf, macrophage activation, or Plaur/uPAR
+    induction when those facts appear in the evidence.
+  - For down children, require a stronger mechanism than generic global
+    transcription reduction; explain why Plaur would fall despite being an
+    inflammatory/LPS-responsive target.
+  - For none children, require a positive buffering/no-response mechanism;
+    do not restate "no direct database edge".
+  - Do not restate the parent. Each child must add a distinct mechanism,
+    missing-evidence assumption, or next biological check.
+  - If only one survivor remains, still create deeper children from it.
   - Use previous tool results and evaluations to deepen the mechanism.
+  - Do not request tools or assume more tool calls will happen later.
   - Remove weak or unsupported wording from child hypothesis text.
   - Do not reveal hidden chain-of-thought. Use compact public biological reasoning only.
   - If evidence is weak, lower confidence rather than overstating the hypothesis.

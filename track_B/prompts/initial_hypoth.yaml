@@ -10,11 +10,38 @@ prompt: |-
   Target gene:
   {target_gene}
 
+  Collected pair evidence JSON:
+  {evidence}
+
   Allowed answers:
   - A / up: perturbing {pert_gene} increases {target_gene} expression
   - B / down: perturbing {pert_gene} decreases {target_gene} expression
   - C / none: perturbing {pert_gene} has no reliable directional effect on {target_gene}
 
+  Biological reasoning priors for this dataset:
+  - The perturbation is a CRISPR loss-of-function/knockout in LPS-stimulated
+    mouse bone marrow-derived macrophages. Reason about knockout effects, not
+    over-expression.
+  - Most useful mechanisms can be indirect. A missing direct STRING/TRRUST edge
+    does not mean "none"; it often means the effect is mediated by cell state,
+    transcriptional stress, LPS/TLR4/NF-kB/AP-1 programs, or RNA processing.
+  - If the perturbation gene affects RNA polymerase II nuclear import,
+    transcription, chromatin, nuclear transport, or protein transport, consider
+    compensatory inflammatory/stress-state shifts before assuming global
+    down-regulation.
+  - If the target is Plaur/uPAR/CD87, treat it as an inflammatory macrophage
+    and LPS/TLR4-associated target. Plaur/uPAR can be induced by endotoxin/LPS
+    in monocytes/macrophages, participates in TLR4 signaling, and is regulated
+    by inflammatory TF programs including NF-kB/Nfkb1, AP-1/Jun, Sp1, and Tcf.
+  - For Plaur-like targets, an UP hypothesis through NF-kB/AP-1/TLR4/uPAR
+    inflammatory activation or compensatory transcriptional stress is a strong
+    branch even without direct pert-target database edges.
+  - A "none" branch needs positive evidence that the target is absent, unchanged,
+    buffered, or unrelated in the relevant LPS macrophage state. Absence of a
+    direct database edge is not positive evidence for "none".
+
+  Use the collected evidence to make each branch biologically specific.
+  Do not request tools or assume more tool calls will happen later.
   Generate exactly one concise public hypothesis for each allowed answer.
   All three initial hypotheses are mandatory search branches and must be explored.
   Set confidence to 1.0 for every initial hypothesis because this value means

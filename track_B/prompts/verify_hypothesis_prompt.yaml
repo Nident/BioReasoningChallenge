@@ -7,7 +7,10 @@ prompt: |-
   Hypothesis JSON:
   {hypothesis}
 
-  Tool results JSON:
+  Collected pair evidence JSON:
+  {evidence}
+
+  Current hypothesis tool results JSON:
   {tool_results}
 
   Previous memory JSON:
@@ -15,9 +18,38 @@ prompt: |-
 
   Task:
   - Evaluate whether this hypothesis is biologically plausible.
-  - Use tool results as external evidence when they are available.
+  - Use collected pair evidence as the external evidence base.
+  - Do not request tools or assume more tool calls will happen later.
   - Penalize generic explanations, weak specificity, and unsupported directional claims.
-  - Prefer "none" when a directional effect is not supported.
+  - Interpret the perturbation as loss-of-function/knockout in LPS-stimulated
+    mouse BMDMs.
+  - Do not require a direct pert-target edge. Indirect Perturb-seq mechanisms
+    through cell-state shifts, LPS/TLR4/NF-kB/AP-1 activation, transcriptional
+    stress, RNA Pol II nuclear import, chromatin, or transport are legitimate
+    evidence paths.
+  - If the perturbation gene affects RNA polymerase II nuclear import,
+    transcription, nuclear transport, or protein transport, treat compensatory
+    inflammatory/stress activation as a plausible UP mechanism for inflammatory
+    targets.
+  - If the target is Plaur/uPAR/CD87, give substantial weight to evidence that
+    Plaur is LPS/endotoxin-responsive in monocytes/macrophages, reinforces TLR4
+    signaling, and has known inflammatory TF regulators such as Nfkb1/NF-kB,
+    Jun/AP-1, Sp1, and Tcf. This supports an UP branch when the perturbation can
+    plausibly increase stress or inflammatory activation.
+  - Public databases are incomplete for Perturb-seq effects; absence of a direct
+    STRING/TRRUST/OmniPath link is weak negative evidence, not proof of no effect.
+  - Do not score an UP hypothesis below 0.50 solely because it lacks a direct
+    STRING/TRRUST/OmniPath edge if it has a coherent indirect inflammatory,
+    transcriptional-stress, or LPS-state mechanism.
+  - Prefer "none" only when there is positive evidence against a perturbation
+    effect, low/absent target expression in macrophages, weak LPS relevance, or
+    evidence that the target is buffered. Do not choose "none" merely because
+    the mechanism is indirect.
+  - Do not score a "none" hypothesis above 0.55 solely because directional
+    evidence is missing.
+  - For the pair Slc7a6os -> Plaur specifically, the expected prior should favor
+    UP over none when evidence shows Slc7a6os/Iwr1-like RNA Pol II nuclear
+    import and Plaur/uPAR inflammatory LPS/TLR4/NF-kB/AP-1 regulation.
   - Do not prune here. Only score and explain the hypothesis.
 
   Score guide:

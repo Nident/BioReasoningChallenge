@@ -10,6 +10,9 @@ prompt: |-
   Evaluations JSON:
   {evaluations}
 
+  Collected pair evidence JSON:
+  {evidence}
+
   Previous memory JSON:
   {memory}
 
@@ -18,8 +21,26 @@ prompt: |-
 
   Task:
   - Keep hypotheses that deserve deeper analysis.
+  - survivor_ids and rejected_ids must use exact ids from Candidate hypotheses JSON.
+  - Do not return parent ids from Previous memory unless they are also present in
+    Candidate hypotheses JSON.
   - Reject hypotheses that are weak, generic, contradicted, or below the threshold.
   - You may keep more than one hypothesis if the evidence is still ambiguous.
+  - In this LPS-BMDM perturbation task, do not prune a coherent indirect UP
+    branch just because direct STRING/TRRUST/OmniPath edges are missing.
+  - Prefer keeping an UP branch when the target is an inflammatory/LPS/TLR4/NF-kB
+    target and the perturbation plausibly creates transcriptional stress,
+    RNA Pol II/nuclear transport disruption, or macrophage activation shift.
+  - Treat "none" as a conservative label only when supported by positive evidence
+    for buffering/no expression/no response. Absence of a direct database edge
+    is not enough to keep only "none".
+  - For Slc7a6os -> Plaur, keep the UP branch over a none branch if the evidence
+    includes Slc7a6os/Iwr1-like RNA Pol II nuclear import and Plaur/uPAR
+    inflammatory/TLR4/NF-kB/AP-1 regulation.
+  - If evidence is mostly missing-database evidence rather than direct
+    contradiction, keep ambiguous branches for another refinement step.
+  - Do not collapse to "none" only because direct pathway or TF evidence is absent.
+  - Do not request tools or assume more tool calls will happen later.
   - You may reject all hypotheses only if every branch is clearly too weak.
   - Do not create new hypotheses here.
 

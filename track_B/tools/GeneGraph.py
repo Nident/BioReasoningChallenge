@@ -1,11 +1,16 @@
 from pprint import pprint
 
+import logging
 import networkx as nx
 from io import StringIO
 import requests
 import pandas as pd
 import random
+import time
 from typing import Any
+
+
+logger = logging.getLogger(__name__)
 
 
 STRING_EVIDENCE_COLUMNS = {
@@ -20,8 +25,9 @@ STRING_EVIDENCE_COLUMNS = {
 
 
 class GeneGraph:
-    def __init__(self, pert, target, required_score=400, add_nodes=20,
-                 n_random_paths=3, random_path_cutoff=5, top_k_paths=3):
+    def __init__(self, pert, target, required_score=400, add_nodes=200,
+                 n_random_paths=3, random_path_cutoff=5, top_k_paths=3,
+                 request_timeout=30, max_path_candidates=500):
         self.pert = pert
         self.target = target
         self.required_score = required_score
@@ -29,26 +35,82 @@ class GeneGraph:
         self.n_random_paths = n_random_paths
         self.top_k_paths = top_k_paths
         self.random_path_cutoff = random_path_cutoff
+        self.request_timeout = request_timeout
+        self.max_path_candidates = max_path_candidates
 
         self.STRING_URL = "https://string-db.org/api"
         self.SPECIES = 10090  # mouse
 
+        logger.info(
+            "Initialized GeneGraph pert=%s target=%s required_score=%s add_nodes=%s "
+            "n_random_paths=%s random_path_cutoff=%s top_k_paths=%s "
+            "request_timeout=%s max_path_candidates=%s",
+            pert,
+            target,
+            required_score,
+            add_nodes,
+            n_random_paths,
+            random_path_cutoff,
+            top_k_paths,
+            request_timeout,
+            max_path_candidates,
+        )
+
     def string_get(self, endpoint, params):
         params = dict(params)
         params["caller_identity"] = "mlgenx_nident"
-        r = requests.get(f"{self.STRING_URL}/tsv/{endpoint}", params=params)
+
+        start = time.monotonic()
+        logger.info(
+            "STRING request start endpoint=%s identifiers=%s required_score=%s add_nodes=%s",
+            endpoint,
+            str(params.get("identifiers")).replace("\r", ","),
+            params.get("required_score"),
+            params.get("add_nodes"),
+        )
+
+        try:
+            r = requests.get(
+                f"{self.STRING_URL}/tsv/{endpoint}",
+                params=params,
+                timeout=self.request_timeout,
+            )
+        except requests.RequestException:
+            logger.exception(
+                "STRING request failed endpoint=%s elapsed=%.2fs",
+                endpoint,
+                time.monotonic() - start,
+            )
+            raise
+
         r.raise_for_status()
+        logger.info(
+            "STRING request done endpoint=%s status=%s bytes=%s elapsed=%.2fs",
+            endpoint,
+            r.status_code,
+            len(r.text),
+            time.monotonic() - start,
+        )
         return r.text
 
     def map_string_ids(self, genes, species=None):
         species = species or self.SPECIES
+        start = time.monotonic()
+        logger.info("Mapping genes to STRING IDs genes=%s species=%s", genes, species)
         text = self.string_get("get_string_ids", {
             "identifiers": "\r".join(genes),
             "species": species,
             "limit": 1,
             "echo_query": 1,
         })
-        return pd.read_csv(StringIO(text), sep="\t")
+        mapped = pd.read_csv(StringIO(text), sep="\t")
+        logger.info(
+            "Mapping done genes=%s rows=%s elapsed=%.2fs",
+            genes,
+            len(mapped),
+            time.monotonic() - start,
+        )
+        return mapped
     
     @staticmethod
     def _safe_float(value, default=0.0):
@@ -60,6 +122,7 @@ class GeneGraph:
             return default
 
     def build_string_graph(self, edges):
+        start = time.monotonic()
         G = nx.Graph()
 
         for _, row in edges.iterrows():
@@ -81,6 +144,13 @@ class GeneGraph:
 
             G.add_edge(a, b, **edge_data)
 
+        logger.info(
+            "Built STRING graph nodes=%s edges=%s source_rows=%s elapsed=%.2fs",
+            G.number_of_nodes(),
+            G.number_of_edges(),
+            len(edges),
+            time.monotonic() - start,
+        )
         return G
 
     def edge_report(self, G, source, target):
@@ -120,6 +190,15 @@ class GeneGraph:
         }
     
     def get_top_k_paths(self, G, source, target):
+        start = time.monotonic()
+        logger.info(
+            "Searching top shortest paths source=%s target=%s top_k=%s graph_nodes=%s graph_edges=%s",
+            source,
+            target,
+            self.top_k_paths,
+            G.number_of_nodes(),
+            G.number_of_edges(),
+        )
         try:
             paths_gen = nx.shortest_simple_paths(G, source=source, target=target)
             paths = []
@@ -133,12 +212,34 @@ class GeneGraph:
                 if len(paths) >= self.top_k_paths:
                     break
 
+            logger.info(
+                "Top shortest path search done source=%s target=%s paths=%s elapsed=%.2fs",
+                source,
+                target,
+                len(paths),
+                time.monotonic() - start,
+            )
             return paths
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
+            logger.info(
+                "Top shortest path search found no path source=%s target=%s elapsed=%.2fs",
+                source,
+                target,
+                time.monotonic() - start,
+            )
             return []
 
-    def get_weighted_paths(self, G, source, target, max_paths=500):
+    def get_weighted_paths(self, G, source, target, max_paths=None):
+        max_paths = self.max_path_candidates if max_paths is None else max_paths
+        start = time.monotonic()
+        logger.info(
+            "Searching weighted simple paths source=%s target=%s cutoff=%s max_candidates=%s",
+            source,
+            target,
+            self.random_path_cutoff,
+            max_paths,
+        )
         try:
             paths_gen = nx.all_simple_paths(
                 G,
@@ -152,6 +253,12 @@ class GeneGraph:
                 reports.append(self.path_report(G, path))
 
                 if len(reports) >= max_paths:
+                    logger.warning(
+                        "Weighted path search hit candidate limit source=%s target=%s limit=%s",
+                        source,
+                        target,
+                        max_paths,
+                    )
                     break
 
             reports.sort(
@@ -163,13 +270,36 @@ class GeneGraph:
                 reverse=True,
             )
 
-            return reports[:self.top_k_paths]
+            result = reports[:self.top_k_paths]
+            logger.info(
+                "Weighted path search done source=%s target=%s candidates=%s returned=%s elapsed=%.2fs",
+                source,
+                target,
+                len(reports),
+                len(result),
+                time.monotonic() - start,
+            )
+            return result
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
+            logger.info(
+                "Weighted path search found no path source=%s target=%s elapsed=%.2fs",
+                source,
+                target,
+                time.monotonic() - start,
+            )
             return []
-        
 
     def get_random_paths(self, G, source, target):
+        start = time.monotonic()
+        logger.info(
+            "Sampling random simple paths source=%s target=%s cutoff=%s max_candidates=%s sample_size=%s",
+            source,
+            target,
+            self.random_path_cutoff,
+            self.max_path_candidates,
+            self.n_random_paths,
+        )
         try:
             all_paths_gen = nx.all_simple_paths(
                 G,
@@ -178,30 +308,79 @@ class GeneGraph:
                 cutoff=self.random_path_cutoff
             )
 
-            paths = list(all_paths_gen)
+            sampled = []
+            candidates_seen = 0
+            truncated = False
 
-            if not paths:
+            for path in all_paths_gen:
+                candidates_seen += 1
+
+                if len(sampled) < self.n_random_paths:
+                    sampled.append(path)
+                else:
+                    replacement_index = random.randrange(candidates_seen)
+                    if replacement_index < self.n_random_paths:
+                        sampled[replacement_index] = path
+
+                if candidates_seen >= self.max_path_candidates:
+                    truncated = True
+                    logger.warning(
+                        "Random path sampling hit candidate limit source=%s target=%s limit=%s",
+                        source,
+                        target,
+                        self.max_path_candidates,
+                    )
+                    break
+
+            if not sampled:
+                logger.info(
+                    "Random path sampling found no path source=%s target=%s elapsed=%.2fs",
+                    source,
+                    target,
+                    time.monotonic() - start,
+                )
                 return []
 
-            sampled = random.sample(paths, min(self.n_random_paths, len(paths)))
-
-            return [
+            result = [
                 {
                     "path": path,
                     "path_length": len(path) - 1
                 }
                 for path in sampled
             ]
+            logger.info(
+                "Random path sampling done source=%s target=%s candidates_seen=%s returned=%s truncated=%s elapsed=%.2fs",
+                source,
+                target,
+                candidates_seen,
+                len(result),
+                truncated,
+                time.monotonic() - start,
+            )
+            return result
 
         except (nx.NetworkXNoPath, nx.NodeNotFound):
+            logger.info(
+                "Random path sampling found no path source=%s target=%s elapsed=%.2fs",
+                source,
+                target,
+                time.monotonic() - start,
+            )
             return []
 
     def get_common_neighbor_report(self, G, source, target, max_items=10):
+        start = time.monotonic()
         try:
             common_neighbors = sorted(
                 set(G.neighbors(source)) & set(G.neighbors(target))
             )
         except nx.NetworkXError:
+            logger.info(
+                "Common neighbor search failed source=%s target=%s elapsed=%.2fs",
+                source,
+                target,
+                time.monotonic() - start,
+            )
             return []
 
         report = []
@@ -227,7 +406,16 @@ class GeneGraph:
             reverse=True,
         )
 
-        return report[:max_items]
+        result = report[:max_items]
+        logger.info(
+            "Common neighbor search done source=%s target=%s total=%s returned=%s elapsed=%.2fs",
+            source,
+            target,
+            len(common_neighbors),
+            len(result),
+            time.monotonic() - start,
+        )
+        return result
 
     def get_network_interactions(
         self,
@@ -240,6 +428,14 @@ class GeneGraph:
         required_score = required_score or self.required_score
         add_nodes = self.add_nodes if add_nodes is None else add_nodes
 
+        start = time.monotonic()
+        logger.info(
+            "Fetching STRING network string_ids=%s species=%s required_score=%s add_nodes=%s",
+            string_ids,
+            species,
+            required_score,
+            add_nodes,
+        )
         text = self.string_get("network", {
             "identifiers": "\r".join(string_ids),
             "species": species,
@@ -247,12 +443,39 @@ class GeneGraph:
             "add_nodes": add_nodes,
             "network_type": "functional",
         })
-        return pd.read_csv(StringIO(text), sep="\t")
+        edges = pd.read_csv(StringIO(text), sep="\t")
+        logger.info(
+            "Fetched STRING network rows=%s elapsed=%.2fs",
+            len(edges),
+            time.monotonic() - start,
+        )
+        return edges
     
     def get_path(self) -> dict[str, Any]:
-        mapped = self.map_string_ids([self.pert, self.target], species=self.SPECIES)
+        start = time.monotonic()
+        logger.info(
+            "GeneGraph start pert=%s target=%s species=%s required_score=%s add_nodes=%s cutoff=%s top_k=%s",
+            self.pert,
+            self.target,
+            self.SPECIES,
+            self.required_score,
+            self.add_nodes,
+            self.random_path_cutoff,
+            self.top_k_paths,
+        )
+
+        try:
+            mapped = self.map_string_ids([self.pert, self.target], species=self.SPECIES)
+        except requests.RequestException as exc:
+            return {
+                "pert": self.pert,
+                "target": self.target,
+                "status": "string_request_failed",
+                "evidence": f"STRING mapping request failed: {exc}"
+            }
 
         if mapped.empty:
+            logger.warning("STRING mapping returned no rows pert=%s target=%s", self.pert, self.target)
             return {
                 "pert": self.pert,
                 "target": self.target,
@@ -261,8 +484,15 @@ class GeneGraph:
             }
 
         mapping = dict(zip(mapped["queryItem"], mapped["stringId"]))
+        logger.info("STRING mapping result pert=%s target=%s mapping=%s", self.pert, self.target, mapping)
 
         if self.pert not in mapping or self.target not in mapping:
+            logger.warning(
+                "STRING mapping missing requested gene pert=%s target=%s mapping_keys=%s",
+                self.pert,
+                self.target,
+                sorted(mapping),
+            )
             return {
                 "pert": self.pert,
                 "target": self.target,
@@ -270,17 +500,31 @@ class GeneGraph:
                 "evidence": "STRING mapping failed for one or both genes."
             }
 
-        edges = self.get_network_interactions(
-            [mapping[self.pert], mapping[self.target]],
-            species=self.SPECIES,
-            required_score=self.required_score,
-            add_nodes=self.add_nodes,
-        )
+        try:
+            edges = self.get_network_interactions(
+                [mapping[self.pert], mapping[self.target]],
+                species=self.SPECIES,
+                required_score=self.required_score,
+                add_nodes=self.add_nodes,
+            )
+        except requests.RequestException as exc:
+            return {
+                "pert": self.pert,
+                "target": self.target,
+                "status": "string_request_failed",
+                "evidence": f"STRING network request failed: {exc}"
+            }
         # print("Edges", edges)
         # sleep(1)  # be nice to the STRING API
 
 
         if edges.empty:
+            logger.info(
+                "GeneGraph no edges pert=%s target=%s elapsed=%.2fs",
+                self.pert,
+                self.target,
+                time.monotonic() - start,
+            )
             return {
                 "pert": self.pert,
                 "target": self.target,
@@ -337,10 +581,12 @@ class GeneGraph:
                 result["best_weighted_path"] = weighted_paths[0]["path"]
                 result["best_weighted_path_confidence_product"] = weighted_paths[0]["confidence_product"]
                 result["best_weighted_path_min_edge_score"] = weighted_paths[0]["min_edge_score"]
+                result["best_weighted_path_report"] = weighted_paths[0]
             else:
                 result["best_weighted_path"] = None
                 result["best_weighted_path_confidence_product"] = 0.0
                 result["best_weighted_path_min_edge_score"] = 0.0
+                result["best_weighted_path_report"] = None
 
             result["random_paths"] = self.get_random_paths(
                 G,
@@ -349,6 +595,7 @@ class GeneGraph:
             )
 
         except Exception:
+            logger.exception("Path search failed pert=%s target=%s", self.pert, self.target)
             result["top_paths"] = []
             result["weighted_paths"] = []
             result["random_paths"] = []
@@ -357,15 +604,35 @@ class GeneGraph:
             result["best_weighted_path"] = None
             result["best_weighted_path_confidence_product"] = 0.0
             result["best_weighted_path_min_edge_score"] = 0.0
+            result["best_weighted_path_report"] = None
 
+        logger.info(
+            "GeneGraph done pert=%s target=%s status=%s direct_edge=%s nodes=%s edges=%s elapsed=%.2fs",
+            self.pert,
+            self.target,
+            result.get("status"),
+            result.get("direct_edge"),
+            result.get("num_nodes"),
+            result.get("num_edges"),
+            time.monotonic() - start,
+        )
         return result
 
 
 
 if __name__ == "__main__":
-    pert = "Cebpb"
-    target = "Brd8dc"
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    pert = "Rngtt"
+    target = "Saa3"
 
     gp = GeneGraph(pert, target)
     result = gp.get_path()
     pprint(result)
+
+    with open("graph.json", "w") as f:
+        import json
+        json.dump([result], f, indent=2)

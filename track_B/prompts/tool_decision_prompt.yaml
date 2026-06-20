@@ -22,12 +22,28 @@ prompt: |-
   {memory}
 
   Rules:
+  - This prompt is deprecated in the current workflow; tools are collected once
+    before hypothesis generation. If this prompt is re-enabled, use it only to
+    gather missing pair evidence, not to decide the final label.
   - Choose at most {max_tool_calls} tool calls.
   - Use only tool names from Available tools JSON.
   - Use args keys exactly as the tool schema says.
   - For gene-pair tools, use pert="{pert_gene}" and gene="{target_gene}".
+  - Avoid repeating a tool already present in Previous memory for the same pair
+    unless it is the only relevant evidence source.
   - Prefer gene_pair_info when functional annotations may help evaluate plausibility.
   - Prefer gene_graph_paths when graph connectivity, paths, or common neighbors may help.
+  - Prefer uniprotdb_evidence for protein function, GO, localization, keywords, and xrefs.
+  - Prefer stringdb_evidence for STRING mappings, local network edges, annotation, and enrichment.
+  - Prefer omnipathdb_evidence for directed or signed signaling mechanisms.
+  - Prefer trrustdb_evidence for TF-target activation/repression evidence.
+  - Prefer keggdb_evidence or reactomedb_evidence for pathway membership.
+  - Prefer chipatlasdb_evidence for TF/chromatin binding availability.
+  - Prefer mgidb_evidence for mouse-native identity and MGI annotations.
+  - Prefer chembl_db_evidence or opentargets_db_evidence only for drug/target priors.
+  - For LPS-BMDM pairs, prioritize evidence that can reveal indirect effects:
+    inflammatory target regulation, NF-kB/AP-1/Sp1/Tcf target evidence,
+    RNA Pol II/nuclear transport, and macrophage activation context.
   - Return an empty tool_calls list if tools would not add useful evidence.
   - Do not reveal hidden chain-of-thought. Use compact public reasons only.
 
