@@ -5,3 +5,26 @@
 - hao25b.pdf
 - https://www.kegg.jp/kegg-bin/show_organism?org=mmu (STRINGDB)
 - https://pmc.ncbi.nlm.nih.gov/articles/PMC11643044/#S9
+
+
+
+https://tflink.net/
+- Direct activation of target-gene transcription by the perturbed protein
+- Direct repression of target-gene transcription by the perturbed protein
+
+
+https://www.grnpedia.org/trrust/
+- Effect through a transcription factor
+
+http://www.licpathway.net:8081/TcoFbase/index.html
+- Effect through a transcriptional coactivator
+- Effect through a transcriptional corepressor
+
+
+http://mouse.biomedtzc.cn
+- Effect through the Mediator complex
+
+
+https://gtrd.biouml.org/#!
+- Effect through RNA polymerase II machinery
+

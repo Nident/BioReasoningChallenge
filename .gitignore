@@ -5,6 +5,10 @@ __pycache__
 .prompt_cache/
 .venv/
 
+*.csv
+*.json
+*.jsonl
+*.txt
 
 test.ipynb
 gene_info.json
